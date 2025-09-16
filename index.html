@@ -184,7 +184,7 @@
                 </div>
             </div>
 
-            <div id="leaderboardScreen" class="ui-panel absolute inset-0 flex-col items-center justify-center text-white p-8 hidden z-10">
+            <div id="leaderboardScreen" class="ui-panel absolute inset-0 flex flex-col items-center justify-center text-white p-8 hidden z-10">
                 <h2 class="text-3xl md:text-4xl font-bold mb-8 text-shadow-ui">Top Players</h2>
                 <ol id="leaderboardList" class="text-lg md:text-xl w-full max-w-sm space-y-4"></ol>
                 <button id="closeLeaderboardButton" class="btn mt-10 text-lg md:text-xl">
@@ -347,7 +347,9 @@
 
         function update() {
             if (isGameOver || !gameStarted) return;
-            frameCount++; gameSpeed += GAME_SPEED_INCREMENT; score++;
+            frameCount++;
+            gameSpeed += GAME_SPEED_INCREMENT;
+            score++;
             const displayedScore = Math.floor(score / 5);
             scoreEl.textContent = displayedScore;
 
@@ -360,12 +362,12 @@
                     if (!isMuted) sfx.biomeChange.triggerAttackRelease(['C5', 'E5', 'G5'], '1s');
                     
                     if (currentMusic) {
-                        currentMusic.stop(Tone.now());
+                        currentMusic.stop();
                     }
                     const tracks = sfx.music[currentBiome];
                     const newTrackIndex = Math.floor(Math.random() * tracks.length);
                     currentMusic = tracks[newTrackIndex];
-                    currentMusic.start(Tone.now() + 0.05);
+                    currentMusic.start(Tone.now());
                     
                     visitedBiomes.add(currentBiome);
                 }
@@ -468,7 +470,7 @@
             leaderboardList.innerHTML = leaderboard.map((entry, i) => 
                 `<li class="flex justify-between items-center">
                     <span class="truncate pr-4">${i+1}. ${entry.name}</span>
-                    <span class="font-bold text-right">${entry.score}</span>
+                    <span class="font-bold text-right w-24">${entry.score}</span>
                 </li>`
             ).join(''); 
         }
