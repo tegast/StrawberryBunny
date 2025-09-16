@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strawberry Bunny</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Comfortaa', sans-serif;
+            background: #ffdde1;
+            overflow: hidden;
+            color: #5D4037;
+            position: relative;
+        }
+        /* Размытые объекты на фоне */
+        body::before,
+        body::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.6;
+        }
+        body::before {
+            width: 50vw;
+            height: 50vw;
+            max-width: 500px;
+            max-height: 500px;
+            background: rgba(255, 182, 193, 0.5); /* Light Pink */
+            top: -10%;
+            left: -10%;
+            animation: float 15s infinite alternate;
+        }
+        body::after {
+            width: 40vw;
+            height: 40vw;
+            max-width: 400px;
+            max-height: 400px;
+            background: rgba(255, 255, 255, 0.7); /* White */
+            bottom: -15%;
+            right: -15%;
+            animation: float 20s infinite alternate;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-30px) translateX(20px); }
+            100% { transform: translateY(0px) translateX(0px); }
+        }
+
+        .font-title {
+            font-family: 'Lobster', cursive;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+            image-rendering: pixelated;
+        }
+        #game-wrapper {
+             background: rgba(255, 255, 255, 0.4);
+             backdrop-filter: blur(10px);
+             -webkit-backdrop-filter: blur(10px);
+             border: 2px solid rgba(255, 255, 255, 0.7);
+             border-radius: 1.5rem;
+             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+             -webkit-tap-highlight-color: transparent;
+        }
+        .text-shadow-title {
+            text-shadow: 3px 3px 0px rgba(255,255,255,0.5);
+        }
+        .text-shadow-ui {
+             text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        .hud-box {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 0.75rem 1.25rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-weight: 700;
+        }
+        .pixel-input {
+            font-family: 'Comfortaa', sans-serif;
+            background-color: rgba(0,0,0,0.2);
+            border: 2px solid white;
+            padding: 12px;
+            text-align: center;
+            color: white;
+            outline: none;
+            border-radius: 0.75rem;
+            width: 100%;
+            max-width: 250px;
+        }
+        .btn {
+            padding: 0.75rem 1.75rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background-image: linear-gradient(to right, #ff758c 0%, #ff7eb3 100%);
+            box-shadow: 0 4px 15px 0 rgba(255, 118, 151, 0.6);
+            transition: all 0.3s ease-in-out;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px 0 rgba(255, 118, 151, 0.8);
+        }
+        .btn-secondary {
+            background-image: linear-gradient(to right, #a18cd1 0%, #fbc2eb 100%);
+            box-shadow: 0 4px 15px 0 rgba(161, 140, 209, 0.6);
+        }
+        .btn-secondary:hover {
+            box-shadow: 0 8px 25px 0 rgba(161, 140, 209, 0.8);
+        }
+        .btn-green {
+            background-image: linear-gradient(to right, #43e97b 0%, #38f9d7 100%);
+            box-shadow: 0 4px 15px 0 rgba(56, 249, 215, 0.6);
+        }
+        .btn-green:hover {
+             box-shadow: 0 8px 25px 0 rgba(56, 249, 215, 0.8);
+        }
+        .ui-panel {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 1.5rem;
+        }
+
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div id="game-container" class="w-full max-w-4xl mx-auto p-4 text-center">
+        <h1 class="text-6xl md:text-7xl font-title text-pink-500 mb-6 text-shadow-title">Strawberry Bunny</h1>
+        <div class="flex justify-between items-center mb-4 text-base md:text-lg">
+            <div class="hud-box">Score: <span id="score">0</span></div>
+            <div class="hud-box">High Score: <span id="highScore">0</span></div>
+        </div>
+        <div id="game-wrapper" class="relative rounded-3xl overflow-hidden">
+            <div id="muteButton" class="absolute top-3 right-3 cursor-pointer text-3xl select-none z-20 p-1 rounded-full bg-white/50 transition-transform hover:scale-110">🔊</div>
+            <canvas id="gameCanvas"></canvas>
+            
+            <!-- UI Screens -->
+            <div id="startScreen" class="ui-panel absolute inset-0 flex flex-col items-center justify-center text-white p-8 z-10">
+                <h2 class="text-3xl md:text-4xl font-bold mb-6 text-shadow-ui">Click to Start</h2>
+                <div class="text-base md:text-lg mb-10 space-y-3 text-shadow-ui">
+                    <p><b>Space / ↑ / Tap:</b> Jump</p>
+                    <p><b>↓:</b> Duck</p>
+                </div>
+                <button id="leaderboardButton" class="btn btn-secondary text-base md:text-lg">
+                    Top Scores
+                </button>
+            </div>
+
+            <div id="gameOverScreen" class="ui-panel absolute inset-0 flex flex-col items-center justify-center text-white p-8 hidden z-10">
+                <h2 class="text-4xl md:text-5xl font-bold text-shadow-ui">Game Over</h2>
+
+                <div class="my-8 h-32 flex flex-col justify-center items-center">
+                    <div id="score-entry" class="hidden w-full max-w-xs flex flex-col items-center gap-4">
+                        <p class="text-lg md:text-xl text-shadow-ui">New High Score!</p>
+                        <input type="text" id="playerNameInput" class="pixel-input" placeholder="Enter Name" maxlength="10">
+                        <button id="submitScoreButton" class="btn btn-green w-full">Submit</button>
+                    </div>
+                    <div id="score-display">
+                         <p class="text-xl md:text-2xl text-shadow-ui">Your Score: <span id="finalScore">0</span></p>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-center gap-4">
+                    <button id="restartButton" class="btn text-lg md:text-xl">
+                        Again
+                    </button>
+                     <button id="gameOverLeaderboardButton" class="btn btn-secondary text-sm">
+                        Top Scores
+                    </button>
+                </div>
+            </div>
+
+            <div id="leaderboardScreen" class="ui-panel absolute inset-0 flex-col items-center justify-center text-white p-8 hidden z-10">
+                <h2 class="text-3xl md:text-4xl font-bold mb-8 text-shadow-ui">Top Players</h2>
+                <ol id="leaderboardList" class="text-lg md:text-xl w-full max-w-sm space-y-4"></ol>
+                <button id="closeLeaderboardButton" class="btn mt-10 text-lg md:text-xl">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // --- UI Elements ---
+        const gameWrapper = document.getElementById('game-wrapper');
+        const scoreEl = document.getElementById('score');
+        const highScoreEl = document.getElementById('highScore');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScoreEl = document.getElementById('finalScore');
+        const restartButton = document.getElementById('restartButton');
+        const muteButton = document.getElementById('muteButton');
+        const leaderboardButton = document.getElementById('leaderboardButton');
+        const gameOverLeaderboardButton = document.getElementById('gameOverLeaderboardButton');
+        const leaderboardScreen = document.getElementById('leaderboardScreen');
+        const leaderboardList = document.getElementById('leaderboardList');
+        const closeLeaderboardButton = document.getElementById('closeLeaderboardButton');
+        const scoreEntry = document.getElementById('score-entry');
+        const scoreDisplay = document.getElementById('score-display');
+        const playerNameInput = document.getElementById('playerNameInput');
+        const submitScoreButton = document.getElementById('submitScoreButton');
+
+        // --- Game Settings ---
+        let score;
+        let highScore = localStorage.getItem('strawberryBunnyHighScore') || 0;
+        let leaderboard = JSON.parse(localStorage.getItem('strawberryBunnyLeaderboard')) || [];
+        let gameSpeed;
+        let isGameOver;
+        let bunny;
+        let obstacles = [];
+        let coins = []; 
+        let coinsCollected = 0;
+        let frameCount = 0;
+        let gameStarted = false;
+        let backgroundParticles = [];
+        let scenery = [];
+        let visitedBiomes = new Set();
+        let screenShakeIntensity = 0;
+        let lightningFlashOpacity = 0;
+
+
+        const GRAVITY = 0.5;
+        const JUMP_FORCE = -11;
+        const INITIAL_GAME_SPEED = 5;
+        const GAME_SPEED_INCREMENT = 0.001;
+        const DAY_NIGHT_DURATION = 1800;
+        
+        // --- Audio Settings ---
+        let isMuted = false;
+        let audioStarted = false;
+        let sfx = {};
+        let currentMusic = null; 
+
+        // --- Biome Settings ---
+        let currentBiome = 'forest';
+        const BIOME_CHANGE_SCORE = 300; 
+        const biomes = ['forest', 'desert', 'hell', 'heaven'];
+        const biomeSettings = {
+            forest: { colors: { ground1: '#A5D6A7', ground2: '#81C784', grass: '#558B2F'}, day: { top: 0xFADADD, bottom: 0xFFFFFF }, sunset: { top: 0xFFB7C5, bottom: 0xFFDAB9 }, night: { top: 0x4A235A, bottom: 0x8E44AD }, obstacles: ['bush', 'bee'], particles: ['leaf', 'strawberry'], scenery: 'tree' },
+            desert: { colors: { ground1: '#F0E68C', ground2: '#D2B48C', grass: '#C2B280'}, day: { top: 0x87CEEB, bottom: 0xFFA500 }, sunset: { top: 0xFF4500, bottom: 0x8B0000 }, night: { top: 0x000080, bottom: 0x483D8B }, obstacles: ['cactus', 'scorpion'], particles: ['dust', 'tumbleweed'], scenery: 'dune' },
+            hell: { colors: { ground1: '#4A0404', ground2: '#800F0F', grass: '#B82020'}, day: { top: 0x2C0000, bottom: 0x8B0000 }, sunset: { top: 0x8B0000, bottom: 0xFF4500 }, night: { top: 0x1B0000, bottom: 0x4A0404 }, obstacles: ['lava', 'imp'], particles: ['ember', 'ash'], scenery: 'volcano' },
+            heaven: { colors: { ground1: '#E0FFFF', ground2: '#B0E0E6', grass: '#FFFFFF'}, day: { top: 0xB0E0E6, bottom: 0xFFFFFF }, sunset: { top: 0xFFD700, bottom: 0xFFE4B5 }, night: { top: 0x483D8B, bottom: 0x9370DB }, obstacles: ['crystal', 'halo'], particles: ['feather', 'sparkle'], scenery: 'pillar' }
+        };
+
+        // --- Classes (Full code remains the same, no changes needed here) ---
+        class Bunny {
+            constructor(x, y, w, h) { this.x = x; this.groundY = y; this.y = this.groundY - h; this.w = w; this.h = h; this.originalH = h; this.vy = 0; this.isJumping = false; this.isDucking = false; this.runFrame = 0; this.yBob = 0; }
+            draw() {
+                ctx.save();
+                this.yBob = this.isJumping ? 0 : Math.sin(frameCount * 0.5) * 1.5;
+                const currentY = this.y + this.yBob;
+
+                ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                const shadowY = this.groundY - 5;
+                const shadowWidth = this.w * 0.7;
+                const shadowHeight = 5;
+                ctx.beginPath();
+                ctx.ellipse(this.x, shadowY, shadowWidth, shadowHeight, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                const headRadius = this.w / 2;
+                const headY = currentY + headRadius - 5;
+
+                if (!this.isDucking) {
+                    ctx.fillStyle = '#FFD1E3'; ctx.strokeStyle = '#C2185B'; ctx.lineWidth = 2;
+                    const legY = currentY + this.h * 0.7;
+                    this.runFrame = Math.floor(frameCount / 4) % 2;
+                    if (!this.isJumping) {
+                        this.drawLeg(this.x - 10, legY, 8, 15, this.runFrame === 0);
+                        this.drawLeg(this.x + 10, legY, 8, 15, this.runFrame !== 0);
+                    } else {
+                        this.drawLeg(this.x - 10, legY - 2, 8, 12, true);
+                        this.drawLeg(this.x + 10, legY - 2, 8, 12, true);
+                    }
+                }
+
+                const bodyStretch = this.isJumping ? 1.05 : 1;
+                ctx.fillStyle = '#FFF0F5'; ctx.strokeStyle = '#F48FB1'; ctx.lineWidth = 3;
+                this.drawEllipse(this.x, currentY + this.h * 0.4, this.w * 1.1 / bodyStretch, this.h * 0.8 * bodyStretch);
+                
+                const earDuckAngle = this.isDucking ? 1.2 : 0;
+                const earH = headRadius * 2.5; const earW = headRadius / 1.5;
+                const earY = currentY - this.h * 0.1;
+                this.drawEar(this.x - headRadius * 0.6, earY, earW, earH, -0.3 + earDuckAngle);
+                this.drawEar(this.x + headRadius * 0.6, earY, earW, earH, 0.3 - earDuckAngle);
+                
+                const duckOffset = this.isDucking ? 10 : 0;
+                ctx.fillStyle = '#FF8FAB'; ctx.strokeStyle = '#E91E63';
+                this.drawSpike(this.x, headY - headRadius * 1.2 - duckOffset, 12, 22, 0);
+                this.drawSpike(this.x - 10, headY - headRadius * 1.1 - duckOffset, 10, 20, -0.3);
+                this.drawSpike(this.x + 10, headY - headRadius * 1.1 - duckOffset, 10, 20, 0.3);
+                this.drawSpike(this.x - 18, headY - headRadius * 0.9 - duckOffset, 8, 16, -0.6);
+                this.drawSpike(this.x + 18, headY - headRadius * 0.9 - duckOffset, 8, 16, 0.6);
+                const gogglesY = headY - headRadius * 0.6 - duckOffset;
+                this.drawGoggles(this.x, gogglesY, headRadius);
+
+                this.drawPixelFace(this.x, headY + 5);
+                
+                ctx.restore();
+            }
+            drawPixelFace(x, y) { const p = 2; const c = { g: '#00FF7F', b: '#1E90FF', k: '#000', w: '#FFF', p: '#FF69B4', bl: 'rgba(255, 105, 180, 0.6)' }; const d = (px, py, cl) => { ctx.fillStyle = cl; ctx.fillRect(x + px * p - (p/2), y + py * p - (p/2), p, p); }; d(-7, 0, c.k); d(-6, -1, c.k); d(-5, -1, c.k); d(-4, 0, c.k); d(-6, 0, c.g); d(-5, 0, c.g); d(-6, 1, c.k); d(-5, 1, c.k); d(-5, -0, c.w); d(7, 0, c.k); d(6, -1, c.k); d(5, -1, c.k); d(4, 0, c.k); d(6, 0, c.b); d(5, 0, c.b); d(6, 1, c.k); d(5, 1, c.k); d(5, -0, c.w); d(0, 4, c.p); d(-1, 5, c.p); d(1, 5, c.p); ctx.fillStyle = c.bl; ctx.fillRect(x - 10 * p, y + 3 * p, 3 * p, 2 * p); ctx.fillRect(x + 7 * p, y + 3 * p, 3 * p, 2 * p); }
+            drawGoggles(x, y, r) { ctx.save(); ctx.fillStyle = '#8B4513'; ctx.strokeStyle = '#5D4037'; ctx.lineWidth = 1; ctx.fillRect(x - r * 1.2, y - 4, r * 2.4, 8); ctx.strokeRect(x - r * 1.2, y - 4, r * 2.4, 8); ctx.fillStyle = '#D2B48C'; ctx.strokeStyle = '#8B4513'; ctx.lineWidth = 2; this.drawEllipse(x - r * 0.5, y, r*0.6, r*0.6); this.drawEllipse(x + r * 0.5, y, r*0.6, r*0.6); ctx.fillStyle = 'rgba(173, 216, 230, 0.7)'; this.drawEllipse(x - r * 0.5, y, r*0.45, r*0.45); this.drawEllipse(x + r * 0.5, y, r*0.45, r*0.45); ctx.restore(); }
+            drawEar(x, y, w, h, angle) { ctx.save(); ctx.translate(x, y); ctx.rotate(angle); ctx.fillStyle = '#FFF0F5'; ctx.strokeStyle = '#F48FB1'; this.drawEllipse(0, 0, w, h); ctx.fillStyle = '#FFD1E3'; this.drawEllipse(0, 5, w * 0.6, h * 0.8); ctx.restore(); }
+            drawSpike(x, y, w, h, angle) { ctx.save(); ctx.translate(x, y); ctx.rotate(angle); ctx.beginPath(); ctx.moveTo(0, -h/2); ctx.quadraticCurveTo(w/2, 0, 0, h/2); ctx.quadraticCurveTo(-w/2, 0, 0, -h/2); ctx.fill(); ctx.stroke(); ctx.restore(); }
+            drawLeg(x, y, w, h, backward = false) { this.drawEllipse(x, backward ? y + 2 : y, w, h); }
+            drawEllipse(x, y, w, h) { ctx.beginPath(); ctx.ellipse(x, y, w / 2, h / 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+            update() { this.y += this.vy; if (this.y + this.h < this.groundY) { this.vy += GRAVITY; if (!this.isJumping) { for(let i = 0; i < 5; i++) { backgroundParticles.push(new Particle(this.x, this.groundY, 'dust_generic')); } } this.isJumping = true; } else { if (this.isJumping) { for(let i = 0; i < 8; i++) { backgroundParticles.push(new Particle(this.x, this.groundY, 'dust_generic')); } } this.vy = 0; this.isJumping = false; this.y = this.groundY - this.h; } this.h = this.isDucking ? this.originalH * (2/3) : this.originalH; if (!this.isJumping) { this.y = this.groundY - this.h; } }
+            jump() { if (!this.isJumping && !this.isDucking) { if (!isMuted && audioStarted) { sfx.jump.triggerAttackRelease('C5', '32n'); } this.vy = JUMP_FORCE; } }
+            duck(isDucking) { if (!this.isJumping) { this.isDucking = isDucking; } }
+        }
+        class Obstacle { constructor(x, y, w, h, type) { this.x = x; this.y = y; this.w = w; this.h = h; this.type = type; this.animFrame = Math.random() * 100; } draw() { this.animFrame++; ctx.save(); if (this.type === 'bush') { this.drawBush(); } else if (this.type === 'bee') { this.drawBee(); } else if (this.type === 'cactus') { this.drawCactus(); } else if (this.type === 'scorpion') { this.drawScorpion(); } else if (this.type === 'lava') { this.drawLava(); } else if (this.type === 'imp') { this.drawImp(); } else if (this.type === 'crystal') { this.drawCrystal(); } else if (this.type === 'halo') { this.drawHalo(); } ctx.restore(); } drawBush(){ ctx.fillStyle = '#689F38'; ctx.strokeStyle = '#33691E'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(this.x, this.y + this.h); ctx.bezierCurveTo(this.x, this.y, this.x + this.w, this.y, this.x + this.w, this.y + this.h); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#d32f2f'; this.drawStrawberry(this.x + this.w * 0.3, this.y + this.h * 0.5); this.drawStrawberry(this.x + this.w * 0.7, this.y + this.h * 0.6); } drawStrawberry(x, y) { ctx.save(); ctx.fillStyle = '#d32f2f'; ctx.beginPath(); ctx.moveTo(x, y); ctx.bezierCurveTo(x - 8, y - 10, x + 8, y - 10, x, y); ctx.fill(); ctx.fillStyle = '#388E3C'; ctx.fillRect(x - 3, y - 12, 6, 4); ctx.restore(); } drawBee(){ const yBob = this.y + Math.sin(this.animFrame * 0.3) * 8; ctx.fillStyle = '#FFC107'; ctx.strokeStyle = '#212121'; ctx.lineWidth = 2; this.drawEllipse(this.x + this.w / 2, yBob + this.h / 2, this.w, this.h * 0.8); ctx.fillStyle = '#212121'; this.drawEllipse(this.x + this.w * 0.4, yBob + this.h / 2, this.w * 0.15, this.h * 0.7); this.drawEllipse(this.x + this.w * 0.6, yBob + this.h / 2, this.w * 0.15, this.h * 0.7); ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; this.drawEllipse(this.x + this.w / 2, yBob, this.w * 0.5, this.h * 0.6); ctx.fillStyle = '#212121'; ctx.beginPath(); ctx.arc(this.x + this.w * 0.8, yBob + this.h * 0.4, 2, 0, Math.PI * 2); ctx.fill(); } drawCactus() { ctx.fillStyle = '#4CAF50'; ctx.strokeStyle = '#2E7D32'; ctx.lineWidth = 3; ctx.beginPath(); ctx.fillRect(this.x + this.w*0.4, this.y, this.w*0.2, this.h); ctx.fillRect(this.x, this.y + this.h*0.4, this.w, this.w*0.2); ctx.strokeRect(this.x + this.w*0.4, this.y, this.w*0.2, this.h); ctx.strokeRect(this.x, this.y + this.h*0.4, this.w, this.w*0.2); } drawScorpion() { ctx.fillStyle = '#4E342E'; ctx.strokeStyle = '#3E2723'; ctx.lineWidth=2; this.drawEllipse(this.x + this.w/2, this.y + this.h/1.5, this.w, this.h/2); ctx.beginPath(); ctx.moveTo(this.x, this.y + this.h); const tailX = this.x + this.w + Math.sin(this.animFrame * 0.1) * 5; ctx.quadraticCurveTo(this.x + this.w, this.y + this.h, tailX, this.y); ctx.stroke(); } drawLava() { ctx.fillStyle = `hsl(15, 100%, ${50 + Math.sin(this.animFrame * 0.2) * 10}%)`; ctx.fillRect(this.x, this.y, this.w, this.h); ctx.fillStyle = `hsl(30, 100%, ${55 + Math.sin(this.animFrame * 0.25) * 10}%)`; ctx.fillRect(this.x, this.y, this.w, this.h/2); } drawImp() { const yBob = this.y + Math.sin(this.animFrame * 0.2) * 8; ctx.fillStyle = '#B71C1C'; ctx.beginPath(); ctx.arc(this.x + this.w/2, yBob, this.w/2, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#FFEB3B'; ctx.beginPath(); ctx.arc(this.x + this.w*0.3, yBob, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x + this.w*0.7, yBob, 3, 0, Math.PI*2); ctx.fill(); } drawCrystal() { const alpha = 0.7 + Math.sin(this.animFrame * 0.1) * 0.3; ctx.fillStyle = `rgba(173, 216, 230, ${alpha})`; ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(this.x + this.w/2, this.y); ctx.lineTo(this.x + this.w, this.y + this.h/2); ctx.lineTo(this.x + this.w/2, this.y + this.h); ctx.lineTo(this.x, this.y + this.h/2); ctx.closePath(); ctx.fill(); ctx.stroke(); } drawHalo() { const yBob = this.y + this.h/2 + Math.sin(this.animFrame * 0.1) * 8; ctx.strokeStyle = `hsl(${this.animFrame * 2 % 360}, 100%, 80%)`; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(this.x + this.w/2, yBob, this.w/2, this.h/4, 0, 0, Math.PI*2); ctx.stroke(); } drawEllipse(x, y, w, h) { ctx.beginPath(); ctx.ellipse(x, y, w / 2, h / 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); } update() { this.x -= gameSpeed; } }
+        class Coin { constructor(x, y) { this.x = x; this.y = y; this.w = 20; this.h = 20; this.animFrame = Math.random() * 100; } update() { this.x -= gameSpeed; this.animFrame++; } draw() { ctx.save(); const scaleX = Math.abs(Math.sin(this.animFrame * 0.05)); ctx.fillStyle = 'rgba(255, 215, 0, 0.4)'; ctx.beginPath(); ctx.ellipse(this.x, this.y + this.h * 0.5, this.w * 0.5 * scaleX, 3, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#FFD700'; ctx.strokeStyle = '#FFA000'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(this.x, this.y, this.w * 0.5 * scaleX, this.h * 0.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore(); } }
+        class Particle { constructor(x, y, type) { this.x = x; this.y = y; this.type = type; this.size = Math.random() * 5 + 2; this.life = 1; if (this.type === 'background') { this.speed = (Math.random() * 0.5 + 0.2) * (gameSpeed / 5); this.size = Math.random() * 15 + 5; this.opacity = Math.random() * 0.5 + 0.2; const particles = biomeSettings[currentBiome].particles; this.variant = particles[Math.floor(Math.random()*particles.length)]; } else if (this.type === 'dust_generic') { this.vx = (Math.random() - 0.5) * 3; this.vy = (Math.random() - 0.5) * 3; } } update() { if(this.type === 'background') this.x -= this.speed; else if (this.type === 'dust_generic') { this.x += this.vx; this.y += this.vy; this.life -= 0.05; } return !(this.x < -this.size || this.life <= 0); } draw() { ctx.save(); if (this.type === 'background') { ctx.globalAlpha = this.opacity; if(this.variant === 'leaf') {ctx.fillStyle = '#8BC34A'; ctx.fillText('🍁', this.x, this.y); } if(this.variant === 'strawberry') this.drawStrawberry(); if(this.variant === 'ash') {ctx.fillStyle = `rgba(50,50,50,${this.opacity})`; ctx.beginPath(); ctx.arc(this.x, this.y, this.size/2, 0, Math.PI*2); ctx.fill();} if(this.variant === 'ember') { ctx.fillStyle = `hsl(30, 100%, ${50 + Math.random()*20}%)`; ctx.fillRect(this.x, this.y, this.size, this.size); } if(this.variant === 'feather') { ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillText('🕊️', this.x, this.y);} if(this.variant === 'sparkle') { ctx.fillStyle = `hsl(${frameCount%360}, 100%, 80%)`; ctx.fillText('✨', this.x, this.y);} } else if (this.type === 'dust_generic') { ctx.globalAlpha = this.life; ctx.fillStyle = biomeSettings[currentBiome].colors.ground2; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); } ctx.restore(); } drawStrawberry(){ ctx.fillStyle = '#EF5350'; ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.bezierCurveTo(this.x - this.size, this.y - this.size*1.2, this.x + this.size, this.y - this.size*1.2, this.x, this.y); ctx.fill(); ctx.fillStyle = '#4CAF50'; ctx.fillRect(this.x - this.size/2.5, this.y - this.size*1.3, this.size/1.2, this.size/3); } }
+        class Scenery { constructor(type, x, canvasHeight) { this.x = x; this.type = type; this.canvasHeight = canvasHeight; this.speed = 1.2; this.size = Math.random() * 60 + 60; this.animFrame = Math.random() * 100; } update() { this.x -= this.speed; this.animFrame++; return this.x > -this.size * 2; } draw() { const groundY = this.canvasHeight - 20; ctx.save(); ctx.globalAlpha = 0.7; ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.beginPath(); ctx.ellipse(this.x + this.size/2, groundY-2, this.size/1.5, 6, 0, 0, Math.PI*2); ctx.fill(); if(this.type === 'tree') { const sway = Math.sin(this.animFrame * 0.02) * 0.05; ctx.save(); ctx.translate(this.x + 7.5, groundY - this.size); ctx.rotate(sway); ctx.fillStyle = '#6D4C41'; ctx.fillRect(-7.5, 0, 15, this.size); ctx.fillStyle = '#4CAF50'; ctx.beginPath(); ctx.arc(0, 0, this.size/1.8, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#81C784'; ctx.beginPath(); ctx.arc(7.5, -10, this.size/2.5, 0, Math.PI*2); ctx.fill(); ctx.restore(); } else if(this.type === 'dune') { ctx.fillStyle = biomeSettings.desert.colors.ground2; ctx.beginPath(); ctx.moveTo(this.x, groundY); ctx.quadraticCurveTo(this.x + this.size/2, groundY - this.size, this.x + this.size, groundY); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.beginPath(); ctx.moveTo(this.x + this.size*0.8, groundY); ctx.quadraticCurveTo(this.x + this.size*0.6, groundY - this.size*0.5, this.x + this.size*0.2, groundY); ctx.fill(); } else if(this.type === 'volcano') { ctx.fillStyle = '#212121'; ctx.beginPath(); ctx.moveTo(this.x, groundY); ctx.lineTo(this.x + this.size/2, groundY - this.size); ctx.lineTo(this.x+this.size, groundY); ctx.fill(); ctx.fillStyle = '#FF5722'; ctx.beginPath(); ctx.moveTo(this.x+this.size/2 - 10, groundY-this.size); ctx.lineTo(this.x+this.size/2+10, groundY-this.size); ctx.lineTo(this.x+this.size/2, groundY-this.size+15); ctx.fill(); } else if(this.type === 'pillar') { const yBob = Math.sin(this.animFrame * 0.03) * 5; ctx.fillStyle = '#CFD8DC'; ctx.fillRect(this.x, groundY - this.size*1.5 + yBob, 25, this.size*1.5); ctx.fillStyle = '#B0BEC5'; ctx.fillRect(this.x - 5, groundY - this.size*1.5 - 10 + yBob, 35, 10); ctx.fillRect(this.x - 5, groundY, 35, 5); } ctx.restore(); } }
+        
+        // --- Game Functions ---
+        
+        function setCanvasSize() { const container = canvas.parentElement; const size = container.clientWidth; canvas.width = size; canvas.height = size / 2; }
+
+        function initAudio() { if (audioStarted) return; Tone.start(); const mainVol = new Tone.Volume(-8).toDestination(); const sfxVol = new Tone.Volume(-8).connect(mainVol); const musicVol = new Tone.Volume(-14).connect(mainVol); sfx.jump = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 } }).connect(sfxVol); sfx.coin = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'square' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 } }).connect(sfxVol); sfx.gameOver = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'square' }, envelope: { attack: 0.05, decay: 0.5, sustain: 0.1, release: 1 } }).connect(sfxVol); sfx.biomeChange = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle8' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.2, release: 0.8 } }).connect(sfxVol); sfx.obstacleSpawn = { ground: new Tone.Synth({oscillator: {type: 'square'}, envelope: {attack: 0.01, decay: 0.1, sustain: 0, release: 0.1}}).connect(sfxVol), flying: new Tone.Synth({oscillator: {type: 'sawtooth'}, envelope: {attack: 0.01, decay: 0.1, sustain: 0, release: 0.1}}).connect(sfxVol), }; const musicSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'square' }, envelope: { attack: 0.005, decay: 0.2, sustain: 0.1, release: 0.2 } }).connect(musicVol); sfx.music = { forest: [ new Tone.Sequence((t, n) => { musicSynth.triggerAttackRelease(n, '8n', t); }, ['C4','E4','G4','E4','A4','G4','E4',null,'C5','G4','E4','C4','D4','E4','D4',null], "8n"), new Tone.Sequence((t, n) => { musicSynth.triggerAttackRelease(n, '8n', t); }, ['G4', 'A4', 'B4', 'G4', 'C5', 'B4', 'A4', 'G4', 'F4', 'G4', 'A4', 'F4', 'E4', 'D4', 'E4', null], "8n"), new Tone.Sequence((t, n) => { musicSynth.triggerAttackRelease(n, '8n', t); }, [['C4','G4'], null, 'E4', 'G4', 'C5', 'G4', 'E4', null, ['F4','C5'], null, 'A4', 'G4', 'F4', 'E4', 'D4', null], "8n") ], desert: [ new Tone.Sequence((t, n) => { musicSynth.triggerAttackRelease(n, '8n', t); }, ['A3',null,'B3','C4',null,'G#3','A3',null,'F3','G#3','A3','B3','C4',null,'B3','A3'], "8n"), new Tone.Sequence((t, n) => { musicSynth.triggerAttackRelease(n, '8n', t); }, ['C4', 'D4', 'Eb4', 'C4', 'G3', null, 'C4', 'D4', 'Eb4', 'F4', null, 'G4', 'Ab4', 'G4', 'F4', 'Eb4'], "8n"), new Tone.Sequence((t, n) => { musicSynth.triggerAttackRelease(n, '8n', t); }, [['A3','E4'], 'D4', 'C4', 'B3', ['A3','E4'], null, 'G#3', 'A3', 'B3', 'C4', null, 'G#3', 'A3', null, 'F3', null], "8n") ], hell: [ new Tone.Sequence((t, n) => { musicSynth.triggerAttackRelease(n, '8n', t); }, [['C3','G3'],'C3',['C3','G3'],'C3',['C3','G3'],'C3',['C3','G3'],'C3',['Bb2','F3'],'Bb2',['Bb2','F3'],'Bb2',['G2','D3'],'G2','Ab2','G2'], "8n"), new Tone.Sequence((t, n) => { musicSynth.triggerAttackRelease(n, '8n', t); }, ['C3', null, 'C3', 'Db3', 'C3', null, 'G2', null, 'Ab2', 'G2', 'F2', 'G2', 'Ab2', 'G2', 'Db3', 'C3'], "8n"), new Tone.Sequence((t, n) => { musicSynth.triggerAttackRelease(n, '8n', t); }, [['C3','G2'], null, ['Db3','Ab2'], null, ['C3','G2'], null, ['F2','C3'], null, ['Ab2','Eb3'], 'G2', 'F2', 'Eb2', 'D2', 'Db2', 'C2', null], "8n") ], heaven: [ new Tone.Sequence((t, n) => { musicSynth.triggerAttackRelease(n, '8n', t); }, ['C5','E5','G5','C6','G5','E5','C5',null,'A5','C6','E6','A6','E6','C6','A5',null], "8n"), new Tone.Sequence((t, n) => { musicSynth.triggerAttackRelease(n, '8n', t); }, ['G5', 'B5', 'D6', 'G6', 'D6', 'B5', 'G5', null, 'F#5', 'A5', 'C6', 'F#6', 'C6', 'A5', 'F#5', null], "8n"), new Tone.Sequence((t, n) => { musicSynth.triggerAttackRelease(n, '8n', t); }, [['C5','G5'], 'D5', 'E5', 'G5', ['A5','E6'], 'G5', 'E5', 'D5', ['F5','C6'], 'E5', 'D5', 'C5', ['G4','B4'], null, 'C5', null], "8n") ], }; Object.values(sfx.music).flat().forEach(loop => { loop.loop = true; loop.playbackRate = 1.2; }); audioStarted = true; }
+
+        function init() { initAudio(); Tone.Transport.start(); if (currentMusic) { currentMusic.stop(); } const firstTrack = sfx.music.forest[0]; firstTrack.start(0); currentMusic = firstTrack; setCanvasSize(); isGameOver = false; gameStarted = true; score = 0; coinsCollected = 0; gameSpeed = INITIAL_GAME_SPEED; frameCount = 0; obstacles = []; coins = []; backgroundParticles = []; scenery = []; currentBiome = 'forest'; visitedBiomes = new Set(['forest']); const groundY = canvas.height - 20; bunny = new Bunny(50, groundY, 50, 60); highScoreEl.textContent = highScore; gameOverScreen.classList.add('hidden'); startScreen.classList.add('hidden'); requestAnimationFrame(gameLoop); }
+        
+        function showStartScreen() { isGameOver = false; gameStarted = false; setCanvasSize(); const groundY = canvas.height - 20; bunny = new Bunny(50, groundY, 50, 60); ctx.clearRect(0,0,canvas.width, canvas.height); const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height); gradient.addColorStop(0, '#FADADD'); gradient.addColorStop(1, '#FFFFFF'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height); const biomeColors = biomeSettings['forest'].colors; ctx.fillStyle = biomeColors.ground1; ctx.fillRect(0, groundY, canvas.width, 20); bunny.draw(); startScreen.classList.remove('hidden'); }
+
+        function spawnObstacle() { const groundY = canvas.height - 20; const types = biomeSettings[currentBiome].obstacles; const type = types[Math.random() < 0.6 ? 0 : 1]; const isFlying = ['bee', 'scorpion', 'imp', 'halo'].includes(type); if (!isMuted && audioStarted) { if(isFlying) { sfx.obstacleSpawn.flying.triggerAttackRelease('A4', '16n'); } else { sfx.obstacleSpawn.ground.triggerAttackRelease('C3', '16n'); } } const h = isFlying ? 30 : 40 + Math.random() * 15; const w = isFlying ? 45 : 35 + Math.random() * 10; const y = isFlying ? (groundY - 60 - Math.random() * 30) : (groundY - h); obstacles.push(new Obstacle(canvas.width, y, w, h, type)); }
+        
+        function spawnCoins() { const groundY = canvas.height - 20; const startY = groundY - 40 - Math.random() * 60; const count = 3 + Math.floor(Math.random() * 4); for (let i = 0; i < count; i++) { const yOffset = Math.sin(i / (count-1) * Math.PI) * 40; coins.push(new Coin(canvas.width + i * 50, startY - yOffset)); } }
+
+        function update() {
+            if (isGameOver || !gameStarted) return;
+            frameCount++; gameSpeed += GAME_SPEED_INCREMENT; score++;
+            const displayedScore = Math.floor(score / 5);
+            scoreEl.textContent = displayedScore;
+
+            const oldBiome = currentBiome;
+            const biomeIndex = Math.floor(displayedScore / BIOME_CHANGE_SCORE) % biomes.length;
+            
+            if (biomes[biomeIndex] !== oldBiome) {
+                 currentBiome = biomes[biomeIndex];
+                 if (audioStarted) {
+                    if (!isMuted) sfx.biomeChange.triggerAttackRelease(['C5', 'E5', 'G5'], '1s');
+                    
+                    if (currentMusic) {
+                        currentMusic.stop(Tone.now());
+                    }
+                    const tracks = sfx.music[currentBiome];
+                    const newTrackIndex = Math.floor(Math.random() * tracks.length);
+                    currentMusic = tracks[newTrackIndex];
+                    currentMusic.start(Tone.now() + 0.05);
+                    
+                    visitedBiomes.add(currentBiome);
+                }
+            }
+            
+            // Dynamic difficulty
+            screenShakeIntensity = Math.max(0, (gameSpeed - 8) * 0.5);
+            if (displayedScore > 1500 && Math.random() < 0.005) {
+                lightningFlashOpacity = 0.7;
+            }
+            if (lightningFlashOpacity > 0) {
+                lightningFlashOpacity -= 0.05;
+            }
+
+
+            bunny.update();
+            if (frameCount % Math.max(50, 150 - Math.floor(gameSpeed * 5)) === 0 && Math.random() > 0.3) { spawnObstacle(); }
+            if (frameCount % 250 === 0 && Math.random() > 0.4) { spawnCoins(); }
+            if (frameCount % 20 === 0) { backgroundParticles.push(new Particle(canvas.width + 20, Math.random() * canvas.height * 0.9, 'background')); }
+            if (frameCount % 200 === 0) { scenery.push(new Scenery(biomeSettings[currentBiome].scenery, canvas.width, canvas.height)); }
+            backgroundParticles = backgroundParticles.filter(p => p.update());
+            scenery = scenery.filter(s => s.update());
+            obstacles = obstacles.filter(o => { o.update(); if (checkCollision(bunny, o)) { endGame(); return false; } return o.x + o.w > 0; });
+            coins = coins.filter(c => { c.update(); if (checkCollision(bunny, c)) { if(!isMuted && audioStarted) { sfx.coin.triggerAttackRelease('G5', '32n'); } score += 25 * 5; coinsCollected++; return false; } return c.x + c.w > 0; });
+        }
+
+        function lerpColor(a, b, amount) { const ar = a >> 16, ag = a >> 8 & 0xff, ab = a & 0xff, br = b >> 16, bg = b >> 8 & 0xff, bb = b & 0xff, rr = ar + amount * (br - ar), rg = ag + amount * (bg - ag), rb = ab + amount * (bb - ab); return (rr << 16) | (rg << 8) | (rb | 0); }
+
+        function draw() {
+            ctx.save();
+            if (screenShakeIntensity > 0) {
+                const dx = (Math.random() - 0.5) * screenShakeIntensity;
+                const dy = (Math.random() - 0.5) * screenShakeIntensity;
+                ctx.translate(dx, dy);
+            }
+
+            const biomeColors = biomeSettings[currentBiome];
+            if (!biomeColors) return; 
+            const time = (frameCount % DAY_NIGHT_DURATION) / DAY_NIGHT_DURATION;
+            const dayColor = biomeColors.day, sunsetColor = biomeColors.sunset, nightColor = biomeColors.night;
+            let c1, c2;
+            if (time < 0.25) { const t = time / 0.25; c1 = lerpColor(dayColor.top, sunsetColor.top, t); c2 = lerpColor(dayColor.bottom, sunsetColor.bottom, t); } else if (time < 0.5) { const t = (time - 0.25) / 0.25; c1 = lerpColor(sunsetColor.top, nightColor.top, t); c2 = lerpColor(sunsetColor.bottom, nightColor.bottom, t); } else if (time < 0.75) { const t = (time - 0.5) / 0.25; c1 = lerpColor(nightColor.top, sunsetColor.top, t); c2 = lerpColor(nightColor.bottom, sunsetColor.bottom, t); } else { const t = (time - 0.75) / 0.25; c1 = lerpColor(sunsetColor.top, dayColor.top, t); c2 = lerpColor(sunsetColor.bottom, dayColor.bottom, t); }
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, "#" + c1.toString(16).padStart(6, '0'));
+            gradient.addColorStop(1, "#" + c2.toString(16).padStart(6, '0'));
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (lightningFlashOpacity > 0) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${lightningFlashOpacity})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            scenery.forEach(s => s.draw());
+            backgroundParticles.forEach(p => p.draw());
+            const groundY = canvas.height - 20;
+            ctx.fillStyle = biomeColors.colors.ground1;
+            ctx.fillRect(0, groundY, canvas.width, 20);
+            const offset = (Math.floor(frameCount * gameSpeed)) % 20;
+            for(let i = 0; i < canvas.width + 20; i+= 20) {
+                ctx.fillStyle = biomeColors.colors.grass;
+                ctx.beginPath();
+                ctx.moveTo(i - offset, groundY);
+                ctx.lineTo(i - offset + 5, groundY - 5);
+                ctx.lineTo(i - offset + 10, groundY);
+                ctx.fill();
+            }
+            bunny.draw();
+            obstacles.forEach(obs => obs.draw());
+            coins.forEach(c => c.draw());
+            ctx.restore();
+        }
+        
+        function gameLoop() { if (!isGameOver) { update(); draw(); requestAnimationFrame(gameLoop); } }
+        
+        function checkCollision(bunny, obj) { const padding = 5; const bunnyLeft = bunny.x - bunny.w / 2 + padding; const bunnyRight = bunny.x + bunny.w / 2 - padding; const bunnyTop = bunny.y + padding; const bunnyBottom = bunny.y + bunny.h - padding; if(obj instanceof Obstacle) { return bunnyLeft < obj.x + obj.w && bunnyRight > obj.x && bunnyTop < obj.y + obj.h && bunnyBottom > obj.y; } const dx = (bunny.x) - (obj.x); const dy = (bunny.y + bunny.h/2) - (obj.y); const distance = Math.sqrt(dx * dx + dy * dy); return distance < bunny.w/2 + obj.w/2; }
+
+        function endGame() {
+            isGameOver = true; gameStarted = false;
+            if (!isMuted && audioStarted) { sfx.gameOver.triggerAttackRelease(['C4', 'A3', 'E3'], '0.8s'); }
+            if (audioStarted) { if (currentMusic) currentMusic.stop(); Tone.Transport.stop(); }
+            
+            draw(); 
+            const currentScore = Math.floor(score / 5);
+            if (currentScore > highScore) { highScore = currentScore; localStorage.setItem('strawberryBunnyHighScore', highScore); highScoreEl.textContent = highScore; }
+            finalScoreEl.textContent = currentScore;
+            
+            const lowestLeaderboardScore = leaderboard.length < 5 ? 0 : leaderboard[4].score;
+            if (currentScore > 0 && currentScore >= lowestLeaderboardScore) {
+                scoreEntry.classList.remove('hidden');
+                scoreDisplay.classList.add('hidden');
+            } else {
+                scoreEntry.classList.add('hidden');
+                scoreDisplay.classList.remove('hidden');
+            }
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        function updateLeaderboard() { 
+            leaderboardList.innerHTML = leaderboard.map((entry, i) => 
+                `<li class="flex justify-between items-center">
+                    <span class="truncate pr-4">${i+1}. ${entry.name}</span>
+                    <span class="font-bold text-right">${entry.score}</span>
+                </li>`
+            ).join(''); 
+        }
+
+        // --- Event Listeners ---
+        function handleKeyDown(e) { if (!gameStarted && !isGameOver && (e.code === 'Space' || e.code === 'ArrowUp')) { init(); return; } if (!isGameOver && gameStarted) { switch (e.code) { case 'Space': case 'ArrowUp': bunny.jump(); break; case 'ArrowDown': bunny.duck(true); break; } } }
+        function handleKeyUp(e) { if (e.code === 'ArrowDown') { bunny.duck(false); } }
+        function handleGameInteraction(e) { e.preventDefault(); if (!gameStarted && !isGameOver) { init(); return; } if (!isGameOver && gameStarted) { bunny.jump(); } }
+        
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        
+        gameWrapper.addEventListener('click', handleGameInteraction);
+        gameWrapper.addEventListener('touchstart', handleGameInteraction, { passive: false });
+
+        restartButton.addEventListener('click', (e) => { e.stopPropagation(); gameOverScreen.classList.add('hidden'); init(); });
+        window.addEventListener('resize', () => { if (!gameStarted) { showStartScreen(); } else { setCanvasSize(); }});
+        muteButton.addEventListener('click', (e) => { e.stopPropagation(); if (!audioStarted) { initAudio(); } isMuted = !isMuted; muteButton.textContent = isMuted ? '🔇' : '🔊'; Tone.getDestination().mute = isMuted; });
+        
+        leaderboardButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            updateLeaderboard();
+            leaderboardScreen.classList.remove('hidden');
+        });
+        
+        gameOverLeaderboardButton.addEventListener('click', (event) => {
+             event.stopPropagation();
+            updateLeaderboard();
+            leaderboardScreen.classList.remove('hidden');
+        });
+
+        closeLeaderboardButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            leaderboardScreen.classList.add('hidden');
+        });
+        submitScoreButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const name = playerNameInput.value.trim() || 'Bunny';
+            const currentScore = Math.floor(score / 5);
+            leaderboard.push({ name, score: currentScore });
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 5);
+            localStorage.setItem('strawberryBunnyLeaderboard', JSON.stringify(leaderboard));
+            scoreEntry.classList.add('hidden');
+            scoreDisplay.classList.remove('hidden');
+        });
+
+        highScoreEl.textContent = highScore;
+        window.addEventListener('load', showStartScreen);
+    </script>
+</body>
+</html>
